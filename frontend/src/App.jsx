@@ -350,10 +350,18 @@ export default function App() {
   }, [])
   useEffect(() => {
     let active = true
-    const loadHours = () => fetch(`${API_BASE}/hours/`).then(response => response.ok ? response.json() : null).then(data => { if (active && data) setCanteenHours(data) }).catch(() => {})
+    const loadHours = () => fetch(`${API_BASE}/hours/`, { cache: 'no-store' }).then(response => response.ok ? response.json() : null).then(data => { if (active && data) setCanteenHours(data) }).catch(() => {})
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') loadHours() }
     loadHours()
-    const timer = setInterval(loadHours, 60000)
-    return () => { active = false; clearInterval(timer) }
+    const timer = setInterval(loadHours, 5000)
+    window.addEventListener('focus', loadHours)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      active = false
+      clearInterval(timer)
+      window.removeEventListener('focus', loadHours)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
   }, [])
   useEffect(() => {
     if (!user) return
