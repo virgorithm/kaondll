@@ -72,11 +72,13 @@ function AuthPage({ onAuthenticated }) {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const isRegister = mode === 'register'
 
   async function submit(event) {
     event.preventDefault()
     setError('')
+    setSuccess('')
     if (isRegister && password !== confirmPassword) { setError('Passwords do not match.'); return }
     setBusy(true)
     try {
@@ -86,8 +88,16 @@ function AuthPage({ onAuthenticated }) {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Could not connect to your account.')
-      localStorage.setItem('kaonToken', data.token)
-      onAuthenticated(data)
+      if (isRegister) {
+        setMode('login')
+        setPassword('')
+        setConfirmPassword('')
+        setShowPassword(false)
+        setSuccess('Account created. Please log in with your username and password.')
+      } else {
+        localStorage.setItem('kaonToken', data.token)
+        onAuthenticated(data)
+      }
     } catch (err) {
       setError(err.message === 'Failed to fetch' ? 'Can’t reach the server. Start the Django backend and try again.' : err.message)
     } finally { setBusy(false) }
@@ -102,10 +112,11 @@ function AuthPage({ onAuthenticated }) {
         <label>Username<input type="text" autoComplete="username" placeholder="Enter your username" value={username} onChange={e => setUsername(e.target.value)} minLength={isRegister ? 3 : undefined} maxLength={150} required/></label>
         <label>Password<span className="password-wrap"><input type={showPassword ? 'text' : 'password'} autoComplete={isRegister ? 'new-password' : 'current-password'} placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} minLength={isRegister ? 8 : undefined} required/><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}</button></span></label>
         {isRegister && <label>Confirm Password<span className="password-wrap"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" placeholder="Enter your password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={8} required/><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}</button></span></label>}
+        {success && <p className="auth-success" role="status">{success}</p>}
         {error && <p className="auth-error" role="alert">{error}</p>}
         <button className="auth-submit" type="submit" disabled={busy}>{busy ? 'Please wait…' : isRegister ? 'Create account' : 'Log in'}<ArrowRight size={16}/></button>
       </form>
-      <p className="auth-switch">{isRegister ? 'Already have an account?' : 'New to Kaon?'} <button onClick={() => { setMode(isRegister ? 'login' : 'register'); setError('') }}>{isRegister ? 'Log in' : 'Create an account'}</button></p>
+      <p className="auth-switch">{isRegister ? 'Already have an account?' : 'New to Kaon?'} <button onClick={() => { setMode(isRegister ? 'login' : 'register'); setError(''); setSuccess(''); setPassword(''); setConfirmPassword('') }}>{isRegister ? 'Log in' : 'Create an account'}</button></p>
     </section>
   </main>
 }
